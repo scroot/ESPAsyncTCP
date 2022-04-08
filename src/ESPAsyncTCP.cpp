@@ -405,7 +405,14 @@ size_t AsyncClient::add(const char* data, size_t size, uint8_t apiflags) {
   }
 #endif
   size_t will_send = (room < size) ? room : size;
-  err_t err = tcp_write(_pcb, data, will_send, apiflags);
+  err_t err;
+  do {
+      err = tcp_write(_pcb, data, will_send, apiflags);
+      if (err == ERR_MEM) {
+        will_send /= 2; 
+      }
+  } while( err == ERR_MEM && will_send > 1);
+  
   if(err != ERR_OK) {
     ASYNC_TCP_DEBUG("_add[%u]: tcp_write() returned err: %s(%ld)\n", getConnectionId(), errorToString(err), err);
     return 0;
